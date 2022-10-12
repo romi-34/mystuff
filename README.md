@@ -1,3 +1,3 @@
 # mystuff
 
-just basics to practice / My very first project!
+just basics to practice Python / My very first projects!
