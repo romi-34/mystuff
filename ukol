@@ -1,0 +1,151 @@
+import argparse
+import numpy as np
+import pandas as pd
+import re
+import warnings
+
+
+def get_column_name(__column_id):
+    return csvFile.columns[int(__column_id)]
+
+
+
+def get_column_value(__row, __column_id):
+    return str(__row[get_column_name(__column_id)])
+
+
+if __name__ == '__main__':
+    # Ignore future warning because of deprecated pandas
+    warnings.filterwarnings("ignore", category=FutureWarning)
+
+
+    parser = argparse.ArgumentParser("sample argument parser")
+    parser.add_argument("--delimeter", default=",", help="specify the delimeter of the CSV file, default is comma")
+    parser.add_argument("--format", help="the format to filter the CSV file on")
+    parser.add_argument("--summary", help="the summary to be printed at the end of the script run")
+    parser.add_argument("--inputFile", help="the desired CSV file to be formatted")
+    args = parser.parse_args()
+
+
+    pattern = re.compile(r'%(\d+)')
+
+    formatter = args.format.split(",")
+
+
+    with open(args.inputFile, newline='') as csvfile:
+        csvFile = pd.read_csv(csvfile, sep=args.delimeter)
+        number_of_errors = 0
+
+        output_matrix = []
+
+
+        sum_cache = {}
+        avg_cache = {}
+        stdev_cache = {}
+
+        print("Format:")
+
+        for id, row in csvFile.iterrows():
+            output_row = []
+
+
+            for param in formatter:
+
+
+                if param.startswith("%"):
+                    column_id = param[1:]
+                    output_row.append(get_column_value(row, column_id))
+
+                elif param.startswith("sum"):
+                    column_id = int(param[5:-1])
+                    if column_id not in sum_cache:
+
+                        numeric_column = pd.to_numeric(csvFile[get_column_name(column_id)], errors='coerce')
+
+                        number_of_errors += numeric_column.isna().sum()
+
+                        column_sum = numeric_column.sum()
+
+                        output_row.append(column_sum)
+
+                        sum_cache[column_id] = column_sum
+
+                    else:
+                        output_row.append(sum_cache[column_id])
+
+                elif param.startswith("avg"):
+                    column_id = int(param[5:-1])
+                    if column_id not in avg_cache:
+                        numeric_column = pd.to_numeric(csvFile[get_column_name(column_id)], errors='coerce')
+                        number_of_errors += numeric_column.isna().sum()
+
+                        column_avg = numeric_column.sum() / csvFile.shape[0]
+                        output_row.append(column_avg)
+                        avg_cache[column_id] = column_avg
+                    else:
+                        output_row.append(avg_cache[column_id])
+
+                elif param.startswith("stdev"):
+                    column_id = int(param[7:-1])
+                    if column_id not in stdev_cache:
+                        numeric_column = pd.to_numeric(csvFile[get_column_name(column_id)], errors='coerce')
+                        number_of_errors += numeric_column.isna().sum()
+                        column_stdev = numeric_column.column_()
+                        output_row.append(column_stdev)
+                        stdev_cache[column_id] = column_stdev
+                    else:
+                        output_row.append(stdev_cache[column_id])
+
+                elif param.startswith("math"):
+                    math_expression = param[5:-1]
+
+                    output_string = pattern.sub(lambda id: get_column_value(row, id.group(1)), math_expression)
+                    try:
+
+                        output_row.append(eval(output_string, {'np': np}))
+                    except (SyntaxError, NameError) as e:
+
+                        number_of_errors += 1
+
+            print(', '.join(map(str, output_row)))
+
+        output_row = []
+        print()
+        print("Summary:")
+
+        for summ in args.summary.split(","):
+
+            if summ == "rows":
+                output_row.append(csvFile.shape[0])
+
+            if summ == "columns":
+                output_row.append(csvFile.shape[1])
+
+
+            if summ == "errors":
+                output_row.append(number_of_errors)
+
+
+            if summ.startswith("max"):
+                column_id = summ[5:-1]
+                max_value = csvFile[get_column_name(column_id)].apply(lambda x: len(str(x))).max()
+                output_row.append(max_value)
+
+            if summ.startswith("min"):
+                column_id = summ[5:-1]
+                min_value = csvFile[get_column_name(column_id)].apply(lambda x: len(str(x))).min()
+                output_row.append(min_value)
+
+            if summ == "longest":
+                max = csvFile.applymap(lambda x: len(str(x))).stack().max()
+                output_row.append(max)
+
+            if summ == "shortest":
+                min = csvFile.applymap(lambda x: len(str(x))).stack().min()
+                output_row.append(min)
+
+            if summ == "average":
+                average_length = csvFile.applymap(lambda x: len(str(x))).stack().mean()
+                output_row.append(average_length)
+
+        print(', '.join(map(str, output_row)))
