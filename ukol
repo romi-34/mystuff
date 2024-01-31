@@ -39,9 +39,9 @@ if __name__ == '__main__':
         output_matrix = []
 
 
-        sum_cache = {}
-        avg_cache = {}
-        stdev_cache = {}
+        sum_list = []
+        avg_list = []
+        stdev_list = []
 
         print("Format:")
 
@@ -58,7 +58,7 @@ if __name__ == '__main__':
 
                 elif param.startswith("sum"):
                     column_id = int(param[5:-1])
-                    if column_id not in sum_cache:
+                    if column_id not in sum_list:
 
                         numeric_column = pd.to_numeric(csvFile[get_column_name(column_id)], errors='coerce')
 
@@ -68,33 +68,33 @@ if __name__ == '__main__':
 
                         output_row.append(column_sum)
 
-                        sum_cache[column_id] = column_sum
+                        sum_list[column_id] = column_sum
 
                     else:
-                        output_row.append(sum_cache[column_id])
+                        output_row.append(sum_list[column_id])
 
                 elif param.startswith("avg"):
                     column_id = int(param[5:-1])
-                    if column_id not in avg_cache:
+                    if column_id not in avg_list:
                         numeric_column = pd.to_numeric(csvFile[get_column_name(column_id)], errors='coerce')
                         number_of_errors += numeric_column.isna().sum()
 
                         column_avg = numeric_column.sum() / csvFile.shape[0]
                         output_row.append(column_avg)
-                        avg_cache[column_id] = column_avg
+                        avg_list[column_id] = column_avg
                     else:
-                        output_row.append(avg_cache[column_id])
+                        output_row.append(avg_list[column_id])
 
                 elif param.startswith("stdev"):
                     column_id = int(param[7:-1])
-                    if column_id not in stdev_cache:
+                    if column_id not in stdev_list:
                         numeric_column = pd.to_numeric(csvFile[get_column_name(column_id)], errors='coerce')
                         number_of_errors += numeric_column.isna().sum()
                         column_stdev = numeric_column.column_()
                         output_row.append(column_stdev)
-                        stdev_cache[column_id] = column_stdev
+                        stdev_list[column_id] = column_stdev
                     else:
-                        output_row.append(stdev_cache[column_id])
+                        output_row.append(stdev_list[column_id])
 
                 elif param.startswith("math"):
                     math_expression = param[5:-1]
